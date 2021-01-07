@@ -1,0 +1,459 @@
+import React, {Component} from "react";
+import clsx from "clsx";
+import CssBaseline from "@material-ui/core/CssBaseline";
+import Drawer from "@material-ui/core/Drawer";
+import Box from "@material-ui/core/Box";
+import AppBar from "@material-ui/core/AppBar";
+import Toolbar from "@material-ui/core/Toolbar";
+import Typography from "@material-ui/core/Typography";
+import Divider from "@material-ui/core/Divider";
+import IconButton from "@material-ui/core/IconButton";
+import Container from "@material-ui/core/Container";
+import Grid from "@material-ui/core/Grid";
+import Paper from "@material-ui/core/Paper";
+import MenuIcon from "@material-ui/icons/Menu";
+import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
+import ChevronRightIcon from "@material-ui/icons/ChevronRight";
+import {Badge, List, SwipeableDrawer, withStyles} from "@material-ui/core";
+import {Copyright} from "../../utils/app";
+import ListItem from "@material-ui/core/ListItem";
+import ListItemIcon from "@material-ui/core/ListItemIcon";
+import * as Icons from "@material-ui/icons";
+import {Adjust, ExitToApp, Send} from "@material-ui/icons";
+import NotificationsIcon from "@material-ui/icons/Notifications";
+import ListItemText from "@material-ui/core/ListItemText";
+import {api, wsClient} from "../../services/api";
+import TextField from "@material-ui/core/TextField";
+import {Styles} from "./styles";
+import Stomp from 'stompjs';
+import {getUser, logout} from "../../services/auth";
+import {green, red} from "@material-ui/core/colors";
+
+class Home extends Component {
+    state = {
+        message: "",
+        menuLeftOpen: false,
+        menuRightOpen: false,
+        environments: [],
+        currentEnvironment: {
+            id: 1,
+            questions: [{
+                id: 0,
+                description: "",
+                responses: []
+            }]
+        },
+        chatMessages: [],
+        newMessages: 0,
+        accounts1: [],
+        accounts2: [],
+        car1: {
+            toEnvironment: {
+                id: 1,
+                name: ""
+            }
+        },
+        car2: {
+            toEnvironment: {
+                id: 1,
+                name: ""
+            }
+        },
+        tool1: "",
+        tool2: ""
+    };
+
+    constructor(props) {
+        super(props);
+        this.chatInput = React.createRef();
+    }
+
+    componentDidMount() {
+        this.handleMenu();
+        this.handleCurrentEnvironment();
+        this.handleMessages();
+        this.handleAccounts();
+
+        const stompClient = Stomp.over(wsClient());
+        const user = getUser();
+        stompClient.connect({}, () => {
+            stompClient.subscribe(`/topic/messages/${user.environment}/${user.group}`,
+                (message) => {
+                    const {chatMessages} = this.state;
+                    this.setState({chatMessages: chatMessages.concat(JSON.parse(message.body))});
+                });
+        }, () => {
+            console.log("error");
+        });
+    }
+
+    logout = () => {
+        logout();
+        this.props.history.push("/");
+    };
+
+    handleMenu = () => {
+        api.get("/api/environments")
+            .then(response =>
+                this.setState({environments: response.data})
+            );
+    };
+
+    handleAccounts = () => {
+        api.get(`/api/accountGroups/${getUser().group}`)
+            .then(response => {
+                    response.data.accounts.forEach(value => value["color"] = red[500]);
+                    this.setState({
+                        accounts: response.data.accounts
+                    });
+
+                    this.handleCars(1);
+                    this.handleCars(2);
+                }
+            );
+    };
+
+    handleCars = (carIndex) => {
+        api.get(`/api/transports/getByIndex/${carIndex}/${getUser().group}`)
+            .then(response => {
+                    const {accounts} = this.state;
+                    const list = JSON.parse(JSON.stringify(accounts));
+                    const nextState = {};
+                    nextState["car" + carIndex] = response.data
+                    nextState["accounts" + carIndex] = list.filter(a => {
+                        if (a.environment.id === response.data.toEnvironment.id) return a;
+                    });
+                    this.setState(nextState);
+                }
+            );
+    };
+
+    handleCurrentEnvironment = () => {
+        api.get(`/api/environments/getWithUserResponses/${this.state.currentEnvironment.id}`)
+            .then(response =>
+                this.setState({currentEnvironment: response.data})
+            );
+    };
+
+    handleMessages = () => {
+        api.get(`/api/chatMessages/getByEnvironmentId/${this.state.currentEnvironment.id}`)
+            .then(response =>
+                this.setState({chatMessages: response.data})
+            );
+    };
+
+    handleOpenLeftMenu = () => {
+        this.setState({menuLeftOpen: true});
+    }
+
+    handleCloseLeftMenu = () => {
+        this.setState({menuLeftOpen: false});
+    }
+
+    handleOpenRightMenu = () => {
+        this.setState({menuRightOpen: true});
+    }
+
+    handleCloseRightMenu = () => {
+        this.setState({menuRightOpen: false});
+    }
+
+    changeMessage = (e) => {
+        this.setState({"message": e.target.value});
+    }
+
+    handleSendMessage = async () => {
+        const {message} = this.state;
+        if (message !== "") {
+            try {
+                await api.post("/api/chatMessages", {
+                    "text": message
+                });
+                this.setState({"message": ""});
+                this.chatInput.current.focus();
+            } catch (err) {
+                console.log(err);
+            }
+        }
+    }
+
+    changeResponse = (e) => {
+        const value = e.target.value;
+        const name = e.target.id;
+        const index = name.substring(9);
+        const nextState = this.state["currentEnvironment"];
+
+        if (!!nextState["questions"][parseInt(index)]["responses"]) {
+            nextState["questions"][parseInt(index)]["responses"] = [{"text": value}];
+        } else {
+            nextState["questions"][parseInt(index)]["responses"][0]["text"] = value;
+        }
+
+        this.setState(nextState);
+    }
+
+    changeValue = (e) => {
+        const nextState = {};
+        nextState[e.target.id] = e.target.value;
+        this.setState(nextState);
+    }
+
+    selectAccount = (accountIndex, carNumber) => {
+        const nextState = this.state["accounts" + carNumber];
+        if (nextState[accountIndex]["color"] === green[500]) {
+            nextState[accountIndex]["color"] = red[500];
+        } else {
+            nextState[accountIndex]["color"] = green[500];
+        }
+        this.setState(nextState);
+    }
+
+    handleCarGo = (carNumber) => {
+
+    };
+
+    render() {
+        const {classes} = this.props;
+        const {
+            menuLeftOpen, menuRightOpen, environments, currentEnvironment,
+            message, chatMessages, newMessages, accounts1, accounts2,
+            car1, car2, tool1, tool2
+        } = this.state;
+
+        return (
+            <div className={classes.root}>
+                <CssBaseline/>
+                <AppBar position="absolute" className={clsx(classes.appBar, menuLeftOpen && classes.appBarShift)}>
+                    <Toolbar className={classes.toolbar}>
+                        <IconButton
+                            edge="start"
+                            color="inherit"
+                            aria-label="open drawer"
+                            onClick={this.handleOpenLeftMenu}
+                            className={clsx(classes.menuButtonLeft, menuLeftOpen && classes.menuButtonHidden)}
+                        >
+                            <MenuIcon/>
+                        </IconButton>
+                        <Typography component="h1" variant="h6" color="inherit" noWrap className={classes.title}>
+                            {currentEnvironment.name}
+                        </Typography>
+                        <IconButton
+                            edge="start"
+                            color="inherit"
+                            aria-label="open drawer"
+                            onClick={this.handleOpenRightMenu}
+                            className={clsx(classes.menuButtonRight, menuRightOpen && classes.menuButtonHidden)}
+                        >
+                            <Badge badgeContent={newMessages} color="secondary">
+                                <NotificationsIcon/>
+                            </Badge>
+                        </IconButton>
+
+                        <IconButton
+                            edge="start"
+                            color="inherit"
+                            onClick={this.logout}>
+                            <Badge color="secondary">
+                                <ExitToApp/>
+                            </Badge>
+                        </IconButton>
+                    </Toolbar>
+                </AppBar>
+                <Drawer
+                    variant="permanent"
+                    classes={{
+                        paper: clsx(classes.drawerPaper, !menuLeftOpen && classes.drawerPaperClose),
+                    }}
+                    open={menuLeftOpen}
+                >
+                    <div className={classes.toolbarIcon}>
+                        <IconButton onClick={this.handleCloseLeftMenu}>
+                            <ChevronLeftIcon/>
+                        </IconButton>
+                    </div>
+                    <Divider/>
+                    <List>
+                        <div>
+                            {environments.map((value, index) => {
+                                return <ListItem button key={`menu-${value.id}`}>
+                                    <ListItemIcon>
+                                        {React.createElement(Icons[value.icon])}
+                                    </ListItemIcon>
+                                    <ListItemText primary={value.name}/>
+                                </ListItem>
+                            })}
+                        </div>
+                    </List>
+                </Drawer>
+                <SwipeableDrawer
+                    anchor="right"
+                    onClose={this.handleCloseRightMenu}
+                    onOpen={this.handleOpenRightMenu}
+                    open={menuRightOpen}
+                >
+                    <div className={classes.toolbarIconRight}>
+                        <IconButton onClick={this.handleCloseRightMenu}>
+                            <ChevronRightIcon/>
+                        </IconButton>
+                    </div>
+                    <Divider/>
+                    <List>
+                        <div className={classes.rightMenu}>
+                            <div className={classes.chatMessages}>
+                                {chatMessages.map((value, index) => {
+                                    return <div key={`chatMessages-${value.id}`}>
+                                        <span className={classes.chatMessageAccount}>
+                                            {value.account.name}: &nbsp;
+                                        </span>
+                                        <span dangerouslySetInnerHTML={{__html: value.text}}/>
+                                    </div>
+                                })}
+                            </div>
+                            <form className={classes.chatForm} noValidate>
+                                <TextField
+                                    inputRef={this.chatInput}
+                                    className={classes.chatInput}
+                                    variant="outlined"
+                                    margin="dense"
+                                    multiline
+                                    inputProps={{maxLength: 2048}}
+                                    rowsMax={4}
+                                    fullWidth
+                                    name="message"
+                                    type="text"
+                                    id="chat"
+                                    value={message}
+                                    onChange={this.changeMessage}
+                                />
+                                <IconButton color="primary" aria-label="Enviar" onClick={this.handleSendMessage}>
+                                    <Send/>
+                                </IconButton>
+                            </form>
+                        </div>
+                        <Divider/>
+                    </List>
+                </SwipeableDrawer>
+                <main className={classes.content}>
+                    <div className={classes.appBarSpacer}/>
+                    <Container maxWidth="lg" className={classes.container}>
+                        <Grid container spacing={3}>
+                            <Grid item xs={12}>
+                                <Paper className={classes.paper}>
+                                    <h3>
+                                        <p dangerouslySetInnerHTML={{__html: currentEnvironment.description}}/>
+                                    </h3>
+
+                                    <Divider/>
+                                    <form className={classes.form} noValidate>
+                                        {currentEnvironment.questions.map((value, index) => {
+                                            return <div key={`div-question-${value.id}`}>
+                                                <h4 key={`question-${value.id}`}>
+                                                    <p dangerouslySetInnerHTML={{__html: value.description}}/>
+                                                </h4>
+                                                <TextField
+                                                    variant="outlined"
+                                                    margin="normal"
+                                                    fullWidth
+                                                    name={`response-${index}`}
+                                                    label="Resposta"
+                                                    multiline
+                                                    type="text"
+                                                    inputProps={{maxLength: 1024}}
+                                                    rowsMax={4}
+                                                    key={`response-${index}`}
+                                                    id={`response-${index}`}
+                                                    value={value.responses.length === 0 ? "" : value.responses[0].text}
+                                                    onChange={this.changeResponse}
+                                                />
+                                            </div>;
+                                        })}
+                                    </form>
+                                </Paper>
+
+                                <Grid justify="space-between" container spacing={2}>
+                                    <Grid item xs={6} className={classes.carGrid}>
+                                        <Paper className={classes.paper}>
+                                            <h3>Carro 1 está no(a) {car1.toEnvironment.name}</h3>
+                                            <Divider/>
+
+                                            {accounts1.map((value, index) => {
+                                                return <ListItem button key={`account1-${value.id}`}
+                                                                 onClick={() => this.selectAccount(index, 1)}>
+                                                    <ListItemIcon>
+                                                        <Adjust style={{color: value.color}}/>
+                                                    </ListItemIcon>
+                                                    <ListItemText primary={value.name}/>
+                                                </ListItem>
+                                            })}
+                                            <Divider/>
+                                            <TextField
+                                                variant="outlined"
+                                                margin="normal"
+                                                fullWidth
+                                                name="tool1"
+                                                label="Ferramentas"
+                                                multiline
+                                                type="text"
+                                                rowsMax={4}
+                                                key="tool1"
+                                                id="tool1"
+                                                value={tool1}
+                                                onChange={this.changeValue}
+                                            />
+
+                                            <IconButton color="primary" aria-label="Ir" className={classes.carButton}
+                                                        onClick={() => this.handleCarGo(1)}>
+                                                <Send/>
+                                            </IconButton>
+                                        </Paper>
+                                    </Grid>
+                                    <Grid item xs={6} className={classes.carGrid}>
+                                        <Paper className={classes.paper}>
+                                            <h3>Carro 2 está no(a) {car2.toEnvironment.name}</h3>
+                                            <Divider/>
+
+                                            {accounts2.map((value, index) => {
+                                                return <ListItem button key={`account2-${value.id}`}
+                                                                 onClick={() => this.selectAccount(index, 2)}>
+                                                    <ListItemIcon>
+                                                        <Adjust style={{color: value.color}}/>
+                                                    </ListItemIcon>
+                                                    <ListItemText primary={value.name}/>
+                                                </ListItem>
+                                            })}
+                                            <Divider/>
+                                            <TextField
+                                                variant="outlined"
+                                                margin="normal"
+                                                fullWidth
+                                                name="tool2"
+                                                label="Ferramentas"
+                                                multiline
+                                                type="text"
+                                                rowsMax={4}
+                                                key="tool2"
+                                                id="tool2"
+                                                value={tool2}
+                                                onChange={this.changeValue}
+                                            />
+
+                                            <IconButton color="primary" aria-label="Ir" className={classes.carButton}
+                                                        onClick={() => this.handleCarGo(2)}>
+                                                <Send/>
+                                            </IconButton>
+                                        </Paper>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                        <Box pt={4}>
+                            <Copyright/>
+                        </Box>
+                    </Container>
+                </main>
+            </div>
+        );
+    }
+}
+
+export default withStyles(Styles)(Home)
