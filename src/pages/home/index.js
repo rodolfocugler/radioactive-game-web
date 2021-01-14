@@ -14,29 +14,29 @@ import Paper from "@material-ui/core/Paper";
 import MenuIcon from "@material-ui/icons/Menu";
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
-import {Badge, List, SwipeableDrawer, withStyles} from "@material-ui/core";
+import {Badge, Button, List, ListItemText, SwipeableDrawer, TextField, withStyles} from "@material-ui/core";
+import {Autocomplete} from "@material-ui/lab";
 import {Copyright} from "../../utils/app";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import * as Icons from "@material-ui/icons";
 import {Adjust, ExitToApp, Send} from "@material-ui/icons";
 import NotificationsIcon from "@material-ui/icons/Notifications";
-import ListItemText from "@material-ui/core/ListItemText";
-import {api, wsClient} from "../../services/api";
-import TextField from "@material-ui/core/TextField";
 import {Styles} from "./styles";
 import Stomp from 'stompjs';
-import {getUser, logout} from "../../services/auth";
+import {api, wsClient} from "../../services/api";
+import {getUser, logout, refreshLogin} from "../../services/auth";
 import {green, red} from "@material-ui/core/colors";
 
 class Home extends Component {
     state = {
         message: "",
+        messageAll: "",
         menuLeftOpen: false,
         menuRightOpen: false,
         environments: [],
         currentEnvironment: {
-            id: 1,
+            id: getUser().environment,
             questions: [{
                 id: 0,
                 description: "",
@@ -44,28 +44,39 @@ class Home extends Component {
             }]
         },
         chatMessages: [],
+        chatMessagesAll: [],
         newMessages: 0,
         accounts1: [],
         accounts2: [],
         car1: {
+            fromEnvironment: {
+                id: 1,
+                name: ""
+            },
             toEnvironment: {
                 id: 1,
                 name: ""
             }
         },
         car2: {
+            fromEnvironment: {
+                id: 1,
+                name: ""
+            },
             toEnvironment: {
                 id: 1,
                 name: ""
             }
         },
         tool1: "",
-        tool2: ""
+        tool2: "",
+        isLeader: getUser().isLeader
     };
 
     constructor(props) {
         super(props);
         this.chatInput = React.createRef();
+        this.chatInputAll = React.createRef();
     }
 
     componentDidMount() {
@@ -77,10 +88,47 @@ class Home extends Component {
         const stompClient = Stomp.over(wsClient());
         const user = getUser();
         stompClient.connect({}, () => {
-            stompClient.subscribe(`/topic/messages/${user.environment}/${user.group}`,
-                (message) => {
-                    const {chatMessages} = this.state;
-                    this.setState({chatMessages: chatMessages.concat(JSON.parse(message.body))});
+            stompClient.subscribe(`/topic/messages/${user.group}`,
+                (response) => {
+                    const {currentEnvironment, newMessages, menuRightOpen} = this.state;
+                    const nextState = this.state;
+                    const message = JSON.parse(response.body);
+                    const user = getUser();
+
+                    let numberOfNewMessages = newMessages;
+                    if (menuRightOpen) {
+                        numberOfNewMessages = 0;
+                    } else if (message.account.id !== user.id) {
+                        numberOfNewMessages++;
+                    }
+
+                    if (!message.environment) {
+                        nextState["chatMessagesAll"] = nextState["chatMessagesAll"].concat(message);
+                    } else if (message.environment.id === currentEnvironment.id) {
+                        nextState["chatMessages"] = nextState["chatMessages"].concat(message);
+                    } else {
+                        numberOfNewMessages = newMessages;
+                    }
+                    nextState["newMessages"] = numberOfNewMessages;
+                    this.setState(nextState);
+                });
+
+            stompClient.subscribe(`/topic/transport/${user.group}`,
+                response => {
+                    const transport = JSON.parse(response.body);
+                    const user = getUser();
+                    if (transport.accounts.filter(a => a.id === user.id).length === 1) {
+                        refreshLogin().then(() => {
+                            const nextState = this.state["currentEnvironment"];
+                            nextState["id"] = getUser().environment;
+                            this.setState(nextState);
+                            this.handleCurrentEnvironment();
+                            this.handleMessages();
+                        });
+                    }
+
+                    const {isLeader} = this.state;
+                    if (isLeader) this.handleAccounts();
                 });
         }, () => {
             console.log("error");
@@ -119,17 +167,18 @@ class Home extends Component {
                     const {accounts} = this.state;
                     const list = JSON.parse(JSON.stringify(accounts));
                     const nextState = {};
-                    nextState["car" + carIndex] = response.data
-                    nextState["accounts" + carIndex] = list.filter(a => {
-                        if (a.environment.id === response.data.toEnvironment.id) return a;
-                    });
+                    response.data.fromEnvironment = response.data.toEnvironment;
+                    response.data.toEnvironment = undefined;
+                    nextState["car" + carIndex] = response.data;
+                    nextState["accounts" + carIndex] = list
+                        .filter(a => a.environment.id === response.data.fromEnvironment.id);
                     this.setState(nextState);
                 }
             );
     };
 
     handleCurrentEnvironment = () => {
-        api.get(`/api/environments/getWithUserResponses/${this.state.currentEnvironment.id}`)
+        api.get(`/api/environments/getWithUserResponses`)
             .then(response =>
                 this.setState({currentEnvironment: response.data})
             );
@@ -139,6 +188,11 @@ class Home extends Component {
         api.get(`/api/chatMessages/getByEnvironmentId/${this.state.currentEnvironment.id}`)
             .then(response =>
                 this.setState({chatMessages: response.data})
+            );
+
+        api.get(`/api/chatMessages/getByAccountGroup`)
+            .then(response =>
+                this.setState({chatMessagesAll: response.data})
             );
     };
 
@@ -151,7 +205,10 @@ class Home extends Component {
     }
 
     handleOpenRightMenu = () => {
-        this.setState({menuRightOpen: true});
+        this.setState({
+            menuRightOpen: true,
+            newMessages: 0
+        });
     }
 
     handleCloseRightMenu = () => {
@@ -159,18 +216,27 @@ class Home extends Component {
     }
 
     changeMessage = (e) => {
-        this.setState({"message": e.target.value});
+        const nextState = {}
+        nextState[e.target.id] = e.target.value;
+        this.setState(nextState);
     }
 
-    handleSendMessage = async () => {
-        const {message} = this.state;
-        if (message !== "") {
+    handleSendMessage = async (isAll) => {
+        const {message, messageAll} = this.state;
+        const endpoint = isAll ? "/all" : "";
+        const msg = isAll ? messageAll : message;
+        if (msg !== "") {
             try {
-                await api.post("/api/chatMessages", {
-                    "text": message
+                await api.post("/api/chatMessages" + endpoint, {
+                    "text": msg
                 });
-                this.setState({"message": ""});
-                this.chatInput.current.focus();
+                if (isAll) {
+                    this.setState({"messageAll": ""});
+                    this.chatInputAll.current.focus();
+                } else {
+                    this.setState({"message": ""});
+                    this.chatInput.current.focus();
+                }
             } catch (err) {
                 console.log(err);
             }
@@ -208,16 +274,56 @@ class Home extends Component {
         this.setState(nextState);
     }
 
-    handleCarGo = (carNumber) => {
+    handleCarGo = async (carNumber) => {
+        const car = this.state["car" + carNumber];
+        const accounts = this.state["accounts" + carNumber]
+            .filter(a => a.color === green[500])
+            .map(a => {
+                return {id: a.id}
+            });
+        const tools = this.state["tool" + carNumber]
+            .split(";")
+            .filter(t => !!t)
+            .map(t => {
+                return {
+                    description: t,
+                    environment: !!car["toEnvironment"] ? car["toEnvironment"] : 0
+                }
+            });
 
+        if (accounts.length !== 0 && !!car["toEnvironment"]) {
+            try {
+                await api.post("/api/transports", {
+                    accountGroup: {id: getUser().group},
+                    carIndex: carNumber,
+                    accounts: accounts,
+                    tools: tools,
+                    toEnvironment: car["toEnvironment"],
+                    fromEnvironment: car["fromEnvironment"],
+                    timestamp: 1202020
+                });
+            } catch (err) {
+                console.log(err);
+            }
+        }
     };
+
+    onChangeEnvironmentTo = (carNumber, value) => {
+        const nextState = this.state["car" + carNumber];
+        nextState["toEnvironment"] = value;
+        this.setState(nextState);
+    }
+
+    handleSendResponses = () => {
+
+    }
 
     render() {
         const {classes} = this.props;
         const {
             menuLeftOpen, menuRightOpen, environments, currentEnvironment,
             message, chatMessages, newMessages, accounts1, accounts2,
-            car1, car2, tool1, tool2
+            car1, car2, tool1, tool2, isLeader, chatMessagesAll, messageAll
         } = this.state;
 
         return (
@@ -299,6 +405,7 @@ class Home extends Component {
                     <Divider/>
                     <List>
                         <div className={classes.rightMenu}>
+                            <h3>Mensagens com que está no(a) {currentEnvironment.name}:</h3>
                             <div className={classes.chatMessages}>
                                 {chatMessages.map((value, index) => {
                                     return <div key={`chatMessages-${value.id}`}>
@@ -321,11 +428,45 @@ class Home extends Component {
                                     fullWidth
                                     name="message"
                                     type="text"
-                                    id="chat"
+                                    id="message"
                                     value={message}
                                     onChange={this.changeMessage}
                                 />
-                                <IconButton color="primary" aria-label="Enviar" onClick={this.handleSendMessage}>
+                                <IconButton color="primary" aria-label="Enviar"
+                                            onClick={() => this.handleSendMessage(false)}>
+                                    <Send/>
+                                </IconButton>
+                            </form>
+
+                            <h3>Mensagens entre todos:</h3>
+                            <div className={classes.chatMessages}>
+                                {chatMessagesAll.map((value, index) => {
+                                    return <div key={`chatMessages-${value.id}`}>
+                                        <span className={classes.chatMessageAccount}>
+                                            {value.account.name}: &nbsp;
+                                        </span>
+                                        <span dangerouslySetInnerHTML={{__html: value.text}}/>
+                                    </div>
+                                })}
+                            </div>
+                            <form className={classes.chatForm} noValidate>
+                                <TextField
+                                    inputRef={this.chatInputAll}
+                                    className={classes.chatInput}
+                                    variant="outlined"
+                                    margin="dense"
+                                    multiline
+                                    inputProps={{maxLength: 2048}}
+                                    rowsMax={4}
+                                    fullWidth
+                                    name="messageAll"
+                                    type="text"
+                                    id="messageAll"
+                                    value={messageAll}
+                                    onChange={this.changeMessage}
+                                />
+                                <IconButton color="primary" aria-label="Enviar"
+                                            onClick={() => this.handleSendMessage(true)}>
                                     <Send/>
                                 </IconButton>
                             </form>
@@ -367,13 +508,24 @@ class Home extends Component {
                                                 />
                                             </div>;
                                         })}
+
+                                        {currentEnvironment.questions.length > 0 && <Button
+                                            type="button"
+                                            fullWidth
+                                            variant="contained"
+                                            color="primary"
+                                            className={classes.submit}
+                                            onClick={this.handleSendResponses}
+                                        >
+                                            Enviar
+                                        </Button>}
                                     </form>
                                 </Paper>
 
-                                <Grid justify="space-between" container spacing={2}>
+                                {isLeader && <Grid justify="space-between" container spacing={2}>
                                     <Grid item xs={6} className={classes.carGrid}>
                                         <Paper className={classes.paper}>
-                                            <h3>Carro 1 está no(a) {car1.toEnvironment.name}</h3>
+                                            <h3>Carro 1 está no(a) {car1.fromEnvironment.name}</h3>
                                             <Divider/>
 
                                             {accounts1.map((value, index) => {
@@ -400,6 +552,22 @@ class Home extends Component {
                                                 value={tool1}
                                                 onChange={this.changeValue}
                                             />
+                                            <Autocomplete
+                                                options={environments.filter(e => e.id !== car1.fromEnvironment.id)}
+                                                fullWidth
+                                                renderOption={(option) => (
+                                                    <React.Fragment>
+                                                        {React.createElement(Icons[option.icon])}
+                                                        {option.name}
+                                                    </React.Fragment>
+                                                )}
+                                                value={car1.toEnvironment}
+                                                onChange={(event, value) => this.onChangeEnvironmentTo(1, value)}
+                                                getOptionLabel={(option) => option.name}
+                                                renderInput={(params) =>
+                                                    <TextField {...params} label="Indo para" variant="outlined"
+                                                               inputProps={{...params.inputProps}}/>}
+                                            />
 
                                             <IconButton color="primary" aria-label="Ir" className={classes.carButton}
                                                         onClick={() => this.handleCarGo(1)}>
@@ -409,7 +577,7 @@ class Home extends Component {
                                     </Grid>
                                     <Grid item xs={6} className={classes.carGrid}>
                                         <Paper className={classes.paper}>
-                                            <h3>Carro 2 está no(a) {car2.toEnvironment.name}</h3>
+                                            <h3>Carro 2 está no(a) {car2.fromEnvironment.name}</h3>
                                             <Divider/>
 
                                             {accounts2.map((value, index) => {
@@ -437,13 +605,30 @@ class Home extends Component {
                                                 onChange={this.changeValue}
                                             />
 
+                                            <Autocomplete
+                                                options={environments.filter(e => e.id !== car2.fromEnvironment.id)}
+                                                fullWidth
+                                                renderOption={(option) => (
+                                                    <React.Fragment>
+                                                        {React.createElement(Icons[option.icon])}
+                                                        {option.name}
+                                                    </React.Fragment>
+                                                )}
+                                                value={car2.toEnvironment}
+                                                onChange={(event, value) => this.onChangeEnvironmentTo(2, value)}
+                                                getOptionLabel={(option) => option.name}
+                                                renderInput={(params) =>
+                                                    <TextField {...params} label="Indo para" variant="outlined"
+                                                               inputProps={{...params.inputProps}}/>}
+                                            />
+
                                             <IconButton color="primary" aria-label="Ir" className={classes.carButton}
                                                         onClick={() => this.handleCarGo(2)}>
                                                 <Send/>
                                             </IconButton>
                                         </Paper>
                                     </Grid>
-                                </Grid>
+                                </Grid>}
                             </Grid>
                         </Grid>
                         <Box pt={4}>

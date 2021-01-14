@@ -1,5 +1,5 @@
 import React from "react";
-import {BrowserRouter, Redirect, Route, Switch} from "react-router-dom";
+import {HashRouter, Redirect, Route, Switch} from "react-router-dom";
 import SignUp from "./pages/signup";
 import SignIn from "./pages/signin";
 import Home from "./pages/home";
@@ -21,14 +21,14 @@ const PrivateRoute = ({component: Component, ...rest}) => (
 );
 
 const Routes = () => (
-    <BrowserRouter>
+    <HashRouter basename="/radioactive-game-web">
         <Switch>
             <Route exact path="/" component={SignIn}/>
             <Route path="/signup" component={SignUp}/>
             <PrivateRoute path="/app" component={Home}/>
             <Route path="*" component={() => <h1>Page not found</h1>}/>
         </Switch>
-    </BrowserRouter>
+    </HashRouter>
 );
 
 export default Routes;

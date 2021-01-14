@@ -6,7 +6,6 @@ import {withStyles} from "@material-ui/core/styles";
 import {Box, Button, Container} from "@material-ui/core";
 import Logo from "../../assets/nuclear.svg"
 import {isRequired, validate, validateFields, validateForm} from "../../utils/form";
-import api from "../../services/api";
 import {login} from "../../services/auth";
 import {Copyright} from "../../utils/app";
 
@@ -43,15 +42,11 @@ class SignIn extends Component {
         const updatedFields = validateFields(fields);
         if (validateForm(updatedFields)) {
             try {
-                const response = await api.post("/login", {
-                    "email": fields.email.value,
-                    "password": fields.password.value
-                });
-                login(response.headers.authorization);
+                await login(fields.email.value, fields.password.value);
                 this.props.history.push("/app");
             } catch (err) {
-                fields.email.error = "E-mail ou CPF inválidos."
-                fields.password.error = "E-mail ou CPF inválidos."
+                fields.email.error = "E-mail ou RA inválidos."
+                fields.password.error = "E-mail ou RA inválidos."
                 this.setState(fields);
             }
         } else {
@@ -90,7 +85,7 @@ class SignIn extends Component {
                             required
                             fullWidth
                             name="password"
-                            label="CPF"
+                            label="RA"
                             type="password"
                             id="password"
                             autoComplete="current-password"

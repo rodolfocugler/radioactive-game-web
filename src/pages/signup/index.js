@@ -53,7 +53,8 @@ class SignIn extends Component {
                     "number": fields.password.value,
                     "environment": {
                         "id": 1
-                    }
+                    },
+                    "isLeader": false
                 });
                 this.setState(resetForm(fields));
             } catch (err) {
@@ -109,7 +110,7 @@ class SignIn extends Component {
                             required
                             fullWidth
                             name="password"
-                            label="CPF"
+                            label="RA"
                             type="text"
                             id="password"
                             autoComplete="current-password"
