@@ -302,6 +302,10 @@ class Home extends Component {
                     fromEnvironment: car["fromEnvironment"],
                     timestamp: 1202020
                 });
+
+                const nextState = {};
+                nextState["tool" + carNumber] = "";
+                this.setState(nextState);
             } catch (err) {
                 console.log(err);
             }

@@ -51,6 +51,7 @@ class SignIn extends Component {
                     "name": fields.name.value,
                     "email": fields.email.value,
                     "number": fields.password.value,
+                    "password": fields.password.value,
                     "environment": {
                         "id": 1
                     },
