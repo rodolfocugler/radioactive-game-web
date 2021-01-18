@@ -41,7 +41,8 @@ class Home extends Component {
                 id: 0,
                 description: "",
                 responses: []
-            }]
+            }],
+            tools: []
         },
         chatMessages: [],
         chatMessagesAll: [],
@@ -125,6 +126,8 @@ class Home extends Component {
                             this.handleCurrentEnvironment();
                             this.handleMessages();
                         });
+                    } else {
+                        this.handleTools();
                     }
 
                     const {isLeader} = this.state;
@@ -172,6 +175,9 @@ class Home extends Component {
                     nextState["car" + carIndex] = response.data;
                     nextState["accounts" + carIndex] = list
                         .filter(a => a.environment.id === response.data.fromEnvironment.id);
+                    let tools = "";
+                    response.data.fromEnvironment.tools.forEach(t => tools += t.description + "; ");
+                    nextState["tool" + carIndex] = tools.trim();
                     this.setState(nextState);
                 }
             );
@@ -182,6 +188,15 @@ class Home extends Component {
             .then(response =>
                 this.setState({currentEnvironment: response.data})
             );
+    };
+
+    handleTools = () => {
+        api.get(`/api/environments/getWithUserResponses`)
+            .then(response => {
+                const {currentEnvironment} = this.state;
+                currentEnvironment["tools"] = response.data.tools;
+                this.setState(currentEnvironment);
+            });
     };
 
     handleMessages = () => {
@@ -221,15 +236,14 @@ class Home extends Component {
         this.setState(nextState);
     }
 
-    handleSendMessage = async (isAll) => {
+    handleSendMessage = (isAll) => {
         const {message, messageAll} = this.state;
         const endpoint = isAll ? "/all" : "";
         const msg = isAll ? messageAll : message;
         if (msg !== "") {
-            try {
-                await api.post("/api/chatMessages" + endpoint, {
-                    "text": msg
-                });
+            api.post("/api/chatMessages" + endpoint, {
+                "text": msg
+            }).then(() => {
                 if (isAll) {
                     this.setState({"messageAll": ""});
                     this.chatInputAll.current.focus();
@@ -237,9 +251,7 @@ class Home extends Component {
                     this.setState({"message": ""});
                     this.chatInput.current.focus();
                 }
-            } catch (err) {
-                console.log(err);
-            }
+            }).catch(err => console.log(err));
         }
     }
 
@@ -318,8 +330,24 @@ class Home extends Component {
         this.setState(nextState);
     }
 
-    handleSendResponses = () => {
+    handleSendResponses = async () => {
+        const {currentEnvironment} = this.state;
+        const questions = currentEnvironment.questions;
 
+        questions.forEach(question => {
+            if (!!question.responses && question.responses.length > 0) {
+                const response = question.responses[0].text;
+
+                api.post("/api/responses", {
+                    account: {id: getUser().id},
+                    text: response,
+                    question: {id: question.id}
+                }).catch(reason => {
+                    console.log(reason);
+                    alert("UM ERRO OCORREU! SALVE SUAS RESPOSTAS!");
+                });
+            }
+        });
     }
 
     render() {
@@ -524,6 +552,17 @@ class Home extends Component {
                                             Enviar
                                         </Button>}
                                     </form>
+
+                                    <Divider/>
+                                    <div className={classes.toolsDiv}>
+                                        {currentEnvironment.tools.map((value, index) => {
+                                            return <Box component="div" display="inline-block" p={1} m={1}
+                                                        className={classes.tools}
+                                                        key={`tool-description-${value.id}`}>
+                                                {value.description}
+                                            </Box>;
+                                        })}
+                                    </div>
                                 </Paper>
 
                                 {isLeader && <Grid justify="space-between" container spacing={2}>
@@ -550,7 +589,7 @@ class Home extends Component {
                                                 label="Ferramentas"
                                                 multiline
                                                 type="text"
-                                                rowsMax={4}
+                                                rowsMax={8}
                                                 key="tool1"
                                                 id="tool1"
                                                 value={tool1}
@@ -602,7 +641,7 @@ class Home extends Component {
                                                 label="Ferramentas"
                                                 multiline
                                                 type="text"
-                                                rowsMax={4}
+                                                rowsMax={8}
                                                 key="tool2"
                                                 id="tool2"
                                                 value={tool2}

@@ -114,5 +114,12 @@ export const Styles = theme => ({
     carButton:{
         width: "50px",
         alignSelf: "flex-end"
+    },
+    toolsDiv:{
+        marginTop: "15px",
+    },
+    tools: {
+        backgroundColor: "#3f51b5",
+        color: "white"
     }
 });

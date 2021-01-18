@@ -45,8 +45,8 @@ class SignIn extends Component {
                 await login(fields.email.value, fields.password.value);
                 this.props.history.push("/app");
             } catch (err) {
-                fields.email.error = "E-mail ou RA inválidos."
-                fields.password.error = "E-mail ou RA inválidos."
+                fields.email.error = "E-mail ou Senha inválidos."
+                fields.password.error = "E-mail ou Senha inválidos."
                 this.setState(fields);
             }
         } else {
@@ -85,7 +85,7 @@ class SignIn extends Component {
                             required
                             fullWidth
                             name="password"
-                            label="RA"
+                            label="Senha"
                             type="password"
                             id="password"
                             autoComplete="current-password"
