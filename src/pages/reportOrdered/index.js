@@ -130,7 +130,7 @@ class ReportOrdered extends Component {
                                             </div>}
                                             {e.type === "response" &&
                                             <div>
-                                                <p>Q.: {e.question}</p>
+                                                <p>Q.: <p dangerouslySetInnerHTML={{__html: e.question}}/></p>
                                                 <span className={classes.response}>
                                                 R.: ({e.account})
                                                 - {this.formatDate(e.timestamp)}:

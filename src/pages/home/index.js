@@ -512,17 +512,14 @@ class Home extends Component {
                         <Grid container spacing={3}>
                             <Grid item xs={12}>
                                 <Paper className={classes.paper}>
-                                    <h3>
-                                        <p dangerouslySetInnerHTML={{__html: currentEnvironment.description}}/>
-                                    </h3>
+                                    <p dangerouslySetInnerHTML={{__html: currentEnvironment.description}}/>
 
                                     <Divider/>
                                     <form className={classes.form} noValidate>
                                         {currentEnvironment.questions.map((value, index) => {
                                             return <div key={`div-question-${value.id}`}>
-                                                <h4 key={`question-${value.id}`}>
-                                                    <p dangerouslySetInnerHTML={{__html: value.description}}/>
-                                                </h4>
+                                                <p dangerouslySetInnerHTML={{__html: value.description}}
+                                                   key={`question-${value.id}`}/>
                                                 <TextField
                                                     variant="outlined"
                                                     margin="normal"

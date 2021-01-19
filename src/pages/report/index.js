@@ -88,7 +88,7 @@ class Report extends Component {
                                         <h4>{environment}:</h4>
                                         {ag.questions[environment].map((q, qI) => {
                                             return <div key={`question-${index}-${qI}`}>
-                                                <p>{q.question}</p>
+                                                Q.: <p dangerouslySetInnerHTML={{__html: q.question}}/>
                                                 {q.responses.map((r, rI) => {
                                                     return <div key={`response-${index}-${rI}`}>
                                                         <span className={classes.response}>
@@ -148,4 +148,3 @@ class Report extends Component {
 }
 
 export default withStyles(Styles)(Report)
-
