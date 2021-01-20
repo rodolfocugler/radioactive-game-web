@@ -5,7 +5,7 @@ import {Styles} from "./styles";
 import {withStyles} from "@material-ui/core/styles";
 import {Box, Button, Container} from "@material-ui/core";
 import Logo from "../../assets/nuclear.svg"
-import {isRequired, resetForm, validate, validateFields, validateForm} from "../../utils/form";
+import {isRequired, validate, validateFields, validateForm} from "../../utils/form";
 import api from "../../services/api";
 import {Copyright} from "../../utils/app";
 
@@ -57,7 +57,8 @@ class SignIn extends Component {
                     },
                     "isLeader": false
                 });
-                this.setState(resetForm(fields));
+                // this.setState(resetForm(fields));
+                this.props.history.push("/")
             } catch (err) {
                 console.log(err);
             }

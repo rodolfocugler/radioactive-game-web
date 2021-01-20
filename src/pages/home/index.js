@@ -512,7 +512,7 @@ class Home extends Component {
                         <Grid container spacing={3}>
                             <Grid item xs={12}>
                                 <Paper className={classes.paper}>
-                                    <p dangerouslySetInnerHTML={{__html: currentEnvironment.description}}/>
+                                    <div dangerouslySetInnerHTML={{__html: currentEnvironment.description}}/>
 
                                     <Divider/>
                                     <form className={classes.form} noValidate>

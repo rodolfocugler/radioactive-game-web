@@ -3,11 +3,12 @@ import CssBaseline from "@material-ui/core/CssBaseline";
 import TextField from "@material-ui/core/TextField";
 import {Styles} from "./styles";
 import {withStyles} from "@material-ui/core/styles";
-import {Box, Button, Container} from "@material-ui/core";
+import {Box, Button, Container, Link} from "@material-ui/core";
 import Logo from "../../assets/nuclear.svg"
 import {isRequired, validate, validateFields, validateForm} from "../../utils/form";
 import {login} from "../../services/auth";
 import {Copyright} from "../../utils/app";
+import Grid from "@material-ui/core/Grid";
 
 class SignIn extends Component {
     state = {
@@ -103,6 +104,13 @@ class SignIn extends Component {
                         >
                             Entrar
                         </Button>
+                        <Grid container className={classes.signup}>
+                            <Grid item>
+                                <Link href="#/signup" variant="body2">
+                                    {"Cadastre-se"}
+                                </Link>
+                            </Grid>
+                        </Grid>
                     </form>
                 </div>
                 <Box mt={8}>

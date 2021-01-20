@@ -18,8 +18,4 @@ export const Styles = theme => ({
     submit: {
         margin: theme.spacing(3, 0, 2),
     },
-    signup: {
-        flexDirection: "column",
-        textAlign: "center"
-    }
 });

@@ -7,6 +7,7 @@ import Report from "./pages/report";
 
 import {isAuthenticated} from "./services/auth";
 import ReportOrdered from "./pages/reportOrdered";
+import AccountGroup from "./pages/accountgroup";
 
 const PrivateRoute = ({component: Component, ...rest}) => (
     <Route
@@ -29,6 +30,7 @@ const Routes = () => (
             <PrivateRoute path="/app" component={Home}/>
             <PrivateRoute path="/report" component={Report}/>
             <PrivateRoute path="/reportOrdered" component={ReportOrdered}/>
+            <PrivateRoute path="/accountgroup" component={AccountGroup}/>
             <Route path="*" component={() => <h1>Page not found</h1>}/>
         </Switch>
     </HashRouter>
