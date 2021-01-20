@@ -336,16 +336,18 @@ class Home extends Component {
 
         questions.forEach(question => {
             if (!!question.responses && question.responses.length > 0) {
-                const response = question.responses[0].text;
+                const response = question.responses[0].text.trim();
 
-                api.post("/api/responses", {
-                    account: {id: getUser().id},
-                    text: response,
-                    question: {id: question.id}
-                }).catch(reason => {
-                    console.log(reason);
-                    alert("UM ERRO OCORREU! SALVE SUAS RESPOSTAS!");
-                });
+                if (response.length > 0) {
+                    api.post("/api/responses", {
+                        account: {id: getUser().id},
+                        text: response,
+                        question: {id: question.id}
+                    }).catch(reason => {
+                        console.log(reason);
+                        alert("UM ERRO OCORREU! SALVE SUAS RESPOSTAS!");
+                    });
+                }
             }
         });
     }
