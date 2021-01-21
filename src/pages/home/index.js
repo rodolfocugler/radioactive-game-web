@@ -526,7 +526,7 @@ class Home extends Component {
                         <Grid container spacing={3}>
                             <Grid item xs={12}>
                                 <Paper className={classes.paper}>
-                                    <h2>Você está no(a) {currentEnvironment.name}</h2>
+                                    <h1>Você está no(a) {currentEnvironment.name}</h1>
                                     <div dangerouslySetInnerHTML={{__html: currentEnvironment.description}}/>
 
                                     <Divider/>
