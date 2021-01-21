@@ -14,8 +14,8 @@ import Paper from "@material-ui/core/Paper";
 import MenuIcon from "@material-ui/icons/Menu";
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ChevronRightIcon from "@material-ui/icons/ChevronRight";
-import {Badge, Button, List, ListItemText, SwipeableDrawer, TextField, withStyles} from "@material-ui/core";
-import {Autocomplete} from "@material-ui/lab";
+import {Badge, Button, List, ListItemText, Snackbar, SwipeableDrawer, TextField, withStyles} from "@material-ui/core";
+import {Alert, Autocomplete} from "@material-ui/lab";
 import {Copyright} from "../../utils/app";
 import ListItem from "@material-ui/core/ListItem";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
@@ -34,6 +34,7 @@ class Home extends Component {
         messageAll: "",
         menuLeftOpen: false,
         menuRightOpen: false,
+        alertOpen: false,
         environments: [],
         currentEnvironment: {
             id: getUser().environment,
@@ -80,7 +81,8 @@ class Home extends Component {
         this.chatInputAll = React.createRef();
     }
 
-    componentDidMount() {
+    async componentDidMount() {
+        await refreshLogin();
         this.handleMenu();
         this.handleCurrentEnvironment();
         this.handleMessages();
@@ -343,20 +345,30 @@ class Home extends Component {
                         account: {id: getUser().id},
                         text: response,
                         question: {id: question.id}
-                    }).catch(reason => {
-                        console.log(reason);
-                        alert("UM ERRO OCORREU! SALVE SUAS RESPOSTAS!");
-                    });
+                    })
+                        .then(() => this.setState({alertOpen: true}))
+                        .catch(reason => {
+                            console.log(reason);
+                            alert("UM ERRO OCORREU! SALVE SUAS RESPOSTAS!");
+                        });
                 }
             }
         });
     }
 
+    handleCloseAlert = (event, reason) => {
+        if (reason === "clickaway") {
+            return;
+        }
+
+        this.setState({alertOpen: false});
+    };
+
     render() {
         const {classes} = this.props;
         const {
             menuLeftOpen, menuRightOpen, environments, currentEnvironment,
-            message, chatMessages, newMessages, accounts1, accounts2,
+            message, chatMessages, newMessages, accounts1, accounts2, alertOpen,
             car1, car2, tool1, tool2, isLeader, chatMessagesAll, messageAll
         } = this.state;
 
@@ -439,7 +451,7 @@ class Home extends Component {
                     <Divider/>
                     <List>
                         <div className={classes.rightMenu}>
-                            <h3>Mensagens com que está no(a) {currentEnvironment.name}:</h3>
+                            <h3>Chat com que está no(a) {currentEnvironment.name} (mesmo lugar que você):</h3>
                             <div className={classes.chatMessages}>
                                 {chatMessages.map((value, index) => {
                                     return <div key={`chatMessages-${value.id}`}>
@@ -472,7 +484,7 @@ class Home extends Component {
                                 </IconButton>
                             </form>
 
-                            <h3>Mensagens entre todos:</h3>
+                            <h3>Chat com todos:</h3>
                             <div className={classes.chatMessages}>
                                 {chatMessagesAll.map((value, index) => {
                                     return <div key={`chatMessages-${value.id}`}>
@@ -514,6 +526,7 @@ class Home extends Component {
                         <Grid container spacing={3}>
                             <Grid item xs={12}>
                                 <Paper className={classes.paper}>
+                                    <h2>Você está no(a) {currentEnvironment.name}</h2>
                                     <div dangerouslySetInnerHTML={{__html: currentEnvironment.description}}/>
 
                                     <Divider/>
@@ -551,6 +564,12 @@ class Home extends Component {
                                             Enviar
                                         </Button>}
                                     </form>
+
+                                    <Snackbar open={alertOpen} autoHideDuration={6000} onClose={this.handleCloseAlert}>
+                                        <Alert onClose={this.handleCloseAlert} severity="success">
+                                            As respostas foram salvas!
+                                        </Alert>
+                                    </Snackbar>
 
                                     <Divider/>
                                     <div className={classes.toolsDiv}>
