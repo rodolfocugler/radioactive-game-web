@@ -27,6 +27,7 @@ import Stomp from 'stompjs';
 import {api, wsClient} from "../../services/api";
 import {getUser, logout, refreshLogin} from "../../services/auth";
 import {green, red} from "@material-ui/core/colors";
+import {number} from "prop-types";
 
 class Home extends Component {
     state = {
@@ -35,6 +36,7 @@ class Home extends Component {
         menuLeftOpen: false,
         menuRightOpen: false,
         alertOpen: false,
+        alert: "",
         environments: [],
         currentEnvironment: {
             id: getUser().environment,
@@ -319,6 +321,9 @@ class Home extends Component {
 
                 const nextState = {};
                 nextState["tool" + carNumber] = "";
+                nextState["alertOpen"] = true;
+                nextState["alert"] = `Carro ${carNumber} enviado!`;
+
                 this.setState(nextState);
             } catch (err) {
                 console.log(err);
@@ -336,7 +341,10 @@ class Home extends Component {
         const {currentEnvironment} = this.state;
         const questions = currentEnvironment.questions;
 
-        questions.forEach(question => {
+        const alertMessage = questions.length > 1 ? "As respostas foram salvas!" : "A resposta foi salva!";
+
+        let savedResponses = 0;
+        await questions.forEach(question => {
             if (!!question.responses && question.responses.length > 0) {
                 const response = question.responses[0].text.trim();
 
@@ -346,7 +354,14 @@ class Home extends Component {
                         text: response,
                         question: {id: question.id}
                     })
-                        .then(() => this.setState({alertOpen: true}))
+                        .then(() => {
+                            if (questions.length === ++savedResponses) {
+                                this.setState({
+                                    alertOpen: true,
+                                    alert: alertMessage
+                                });
+                            }
+                        })
                         .catch(reason => {
                             console.log(reason);
                             alert("UM ERRO OCORREU! SALVE SUAS RESPOSTAS!");
@@ -369,7 +384,7 @@ class Home extends Component {
         const {
             menuLeftOpen, menuRightOpen, environments, currentEnvironment,
             message, chatMessages, newMessages, accounts1, accounts2, alertOpen,
-            car1, car2, tool1, tool2, isLeader, chatMessagesAll, messageAll
+            car1, car2, tool1, tool2, isLeader, chatMessagesAll, messageAll, alert
         } = this.state;
 
         return (
@@ -567,7 +582,7 @@ class Home extends Component {
 
                                     <Snackbar open={alertOpen} autoHideDuration={6000} onClose={this.handleCloseAlert}>
                                         <Alert onClose={this.handleCloseAlert} severity="success">
-                                            As respostas foram salvas!
+                                            {alert}
                                         </Alert>
                                     </Snackbar>
 
