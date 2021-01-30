@@ -1,22 +1,22 @@
 {
   "files": {
-    "main.js": "/radioactive-game-web1/static/js/main.c070e37e.chunk.js",
-    "main.js.map": "/radioactive-game-web1/static/js/main.c070e37e.chunk.js.map",
-    "runtime-main.js": "/radioactive-game-web1/static/js/runtime-main.bff80616.js",
-    "runtime-main.js.map": "/radioactive-game-web1/static/js/runtime-main.bff80616.js.map",
-    "static/css/2.9810f279.chunk.css": "/radioactive-game-web1/static/css/2.9810f279.chunk.css",
-    "static/js/2.db92d5bb.chunk.js": "/radioactive-game-web1/static/js/2.db92d5bb.chunk.js",
-    "static/js/2.db92d5bb.chunk.js.map": "/radioactive-game-web1/static/js/2.db92d5bb.chunk.js.map",
-    "index.html": "/radioactive-game-web1/index.html",
-    "static/css/2.9810f279.chunk.css.map": "/radioactive-game-web1/static/css/2.9810f279.chunk.css.map",
-    "static/js/2.db92d5bb.chunk.js.LICENSE.txt": "/radioactive-game-web1/static/js/2.db92d5bb.chunk.js.LICENSE.txt",
-    "static/media/font-awesome.css": "/radioactive-game-web1/static/media/fontawesome-webfont.f691f37e.woff",
-    "static/media/nuclear.272c3b9e.svg": "/radioactive-game-web1/static/media/nuclear.272c3b9e.svg"
+    "main.js": "/radioactive-game-web/static/js/main.c070e37e.chunk.js",
+    "main.js.map": "/radioactive-game-web/static/js/main.c070e37e.chunk.js.map",
+    "runtime-main.js": "/radioactive-game-web/static/js/runtime-main.c1b5a7ab.js",
+    "runtime-main.js.map": "/radioactive-game-web/static/js/runtime-main.c1b5a7ab.js.map",
+    "static/css/2.df7653f6.chunk.css": "/radioactive-game-web/static/css/2.df7653f6.chunk.css",
+    "static/js/2.433ad629.chunk.js": "/radioactive-game-web/static/js/2.433ad629.chunk.js",
+    "static/js/2.433ad629.chunk.js.map": "/radioactive-game-web/static/js/2.433ad629.chunk.js.map",
+    "index.html": "/radioactive-game-web/index.html",
+    "static/css/2.df7653f6.chunk.css.map": "/radioactive-game-web/static/css/2.df7653f6.chunk.css.map",
+    "static/js/2.433ad629.chunk.js.LICENSE.txt": "/radioactive-game-web/static/js/2.433ad629.chunk.js.LICENSE.txt",
+    "static/media/font-awesome.css": "/radioactive-game-web/static/media/fontawesome-webfont.f691f37e.woff",
+    "static/media/nuclear.272c3b9e.svg": "/radioactive-game-web/static/media/nuclear.272c3b9e.svg"
   },
   "entrypoints": [
-    "static/js/runtime-main.bff80616.js",
-    "static/css/2.9810f279.chunk.css",
-    "static/js/2.db92d5bb.chunk.js",
+    "static/js/runtime-main.c1b5a7ab.js",
+    "static/css/2.df7653f6.chunk.css",
+    "static/js/2.433ad629.chunk.js",
     "static/js/main.c070e37e.chunk.js"
   ]
 }
