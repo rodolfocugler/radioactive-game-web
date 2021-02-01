@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.js": "/radioactive-game-web/static/js/main.b191a88e.chunk.js",
-    "main.js.map": "/radioactive-game-web/static/js/main.b191a88e.chunk.js.map",
+    "main.js": "/radioactive-game-web/static/js/main.ebe868d3.chunk.js",
+    "main.js.map": "/radioactive-game-web/static/js/main.ebe868d3.chunk.js.map",
     "runtime-main.js": "/radioactive-game-web/static/js/runtime-main.c1b5a7ab.js",
     "runtime-main.js.map": "/radioactive-game-web/static/js/runtime-main.c1b5a7ab.js.map",
     "static/css/2.df7653f6.chunk.css": "/radioactive-game-web/static/css/2.df7653f6.chunk.css",
@@ -17,6 +17,6 @@
     "static/js/runtime-main.c1b5a7ab.js",
     "static/css/2.df7653f6.chunk.css",
     "static/js/2.433ad629.chunk.js",
-    "static/js/main.b191a88e.chunk.js"
+    "static/js/main.ebe868d3.chunk.js"
   ]
 }
