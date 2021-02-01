@@ -27,7 +27,6 @@ import Stomp from 'stompjs';
 import {api, wsClient} from "../../services/api";
 import {getUser, logout, refreshLogin} from "../../services/auth";
 import {green, red} from "@material-ui/core/colors";
-import {number} from "prop-types";
 
 class Home extends Component {
     state = {
@@ -344,30 +343,33 @@ class Home extends Component {
         const alertMessage = questions.length > 1 ? "As respostas foram salvas!" : "A resposta foi salva!";
 
         let savedResponses = 0;
-        await questions.forEach(question => {
+        const questionsAnswered = questions.filter(question => {
             if (!!question.responses && question.responses.length > 0) {
                 const response = question.responses[0].text.trim();
-
-                if (response.length > 0) {
-                    api.post("/api/responses", {
-                        account: {id: getUser().id},
-                        text: response,
-                        question: {id: question.id}
-                    })
-                        .then(() => {
-                            if (questions.length === ++savedResponses) {
-                                this.setState({
-                                    alertOpen: true,
-                                    alert: alertMessage
-                                });
-                            }
-                        })
-                        .catch(reason => {
-                            console.log(reason);
-                            alert("UM ERRO OCORREU! SALVE SUAS RESPOSTAS!");
-                        });
-                }
+                return response.length > 0;
             }
+            return false;
+        })
+
+        await questionsAnswered.forEach(question => {
+            const response = question.responses[0].text.trim();
+            api.post("/api/responses", {
+                account: {id: getUser().id},
+                text: response,
+                question: {id: question.id}
+            })
+                .then(() => {
+                    if (questionsAnswered.length === ++savedResponses) {
+                        this.setState({
+                            alertOpen: true,
+                            alert: alertMessage
+                        });
+                    }
+                })
+                .catch(reason => {
+                    console.log(reason);
+                    alert("UM ERRO OCORREU! SALVE SUAS RESPOSTAS!");
+                });
         });
     }
 
