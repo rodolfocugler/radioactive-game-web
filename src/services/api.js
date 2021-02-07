@@ -4,6 +4,7 @@ import SockJS from "sockjs-client";
 
 export const api = axios.create({
     baseURL: "https://radioactive-game.herokuapp.com"
+    //baseURL: "http://localhost:8080"
     //baseURL: "https://3db75071c1592c7d4c6.ddns.net:443"
 })
 

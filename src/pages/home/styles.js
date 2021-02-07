@@ -82,8 +82,7 @@ export const Styles = theme => ({
         padding: theme.spacing(2),
         display: "flex",
         overflow: "auto",
-        flexDirection: "column",
-        minHeight: 540,
+        flexDirection: "column"
     },
     fixedHeight: {
         height: 240,

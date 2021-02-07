@@ -112,6 +112,7 @@ class ReportOrdered extends Component {
                                         return <div key={`event-${index}-${eI}`}>
                                             {e.type === "transport" &&
                                             <div className={classes.transportDiv}>
+                                                <p><span className={classes.span}>Carro:</span> {e.carIndex}</p>
                                                 <p><span className={classes.span}>Saiu do(a):</span> {e.from}</p>
                                                 <p><span className={classes.span}>Foi para o(a):</span> {e.to}</p>
                                                 <p><span

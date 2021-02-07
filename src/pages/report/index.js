@@ -121,6 +121,7 @@ class Report extends Component {
                                 <h3>Movimentação: </h3>
                                 {ag.report.events.map((e, evI) => {
                                     return <div key={`event-${index}-${evI}`} className={classes.transportDiv}>
+                                        <p><span className={classes.span}>Carro:</span> {e.carIndex}</p>
                                         <p><span className={classes.span}>Saiu do(a):</span> {e.from}</p>
                                         <p><span className={classes.span}>Foi para o(a):</span> {e.to}</p>
                                         <p><span className={classes.span}>As:</span> {this.formatDate(e.timestamp)}</p>
